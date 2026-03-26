@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InvoiceNAM – Professional Invoice Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f0e0c;
+    --paper: #f5f0e8;
+    --accent: #c8502a;
+    --accent2: #2a6e4e;
+    --muted: #8a8478;
+    --border: #d8d2c6;
+    --white: #ffffff;
+    --input-bg: #faf7f2;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* ── APP SHELL ── */
+  .app-header {
+    background: var(--ink);
+    color: var(--white);
+    padding: 16px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .app-header .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.4rem;
+    letter-spacing: -0.5px;
+  }
+
+  .app-header .logo span { color: var(--accent); }
+
+  .app-header .tagline {
+    font-size: 0.75rem;
+    color: #a09890;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .app-body {
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    min-height: calc(100vh - 56px);
+  }
+
+  /* ── EDITOR PANEL ── */
+  .editor {
+    background: var(--white);
+    border-right: 1px solid var(--border);
+    padding: 32px 28px;
+    overflow-y: auto;
+    max-height: calc(100vh - 56px);
+    position: sticky;
+    top: 0;
+  }
+
+  .editor h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.1rem;
+    margin-bottom: 20px;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .editor h2::before {
+    content: '';
+    display: block;
+    width: 4px;
+    height: 18px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  .section { margin-bottom: 28px; }
+
+  .field { margin-bottom: 14px; }
+
+  label {
+    display: block;
+    font-size: 0.7rem;
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+
+  input, textarea, select {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    background: var(--input-bg);
+    color: var(--ink);
+    transition: border-color 0.2s;
+    outline: none;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--accent);
+    background: var(--white);
+  }
+
+  textarea { resize: vertical; min-height: 60px; }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* ── LINE ITEMS ── */
+  .items-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+  .items-table thead th {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    padding: 6px 4px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .items-table tbody td { padding: 4px 3px; }
+  .items-table input { padding: 7px 8px; font-size: 0.82rem; }
+
+  .item-desc { width: 45%; }
+  .item-qty { width: 18%; }
+  .item-rate { width: 22%; }
+  .item-del { width: 10%; text-align: center; }
+
+  .btn-del {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 1rem;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color 0.2s;
+  }
+  .btn-del:hover { color: var(--accent); }
+
+  .btn-add {
+    background: none;
+    border: 1px dashed var(--border);
+    color: var(--muted);
+    font-size: 0.8rem;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    width: 100%;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+    margin-bottom: 10px;
+  }
+  .btn-add:hover { border-color: var(--accent); color: var(--accent); }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 20px 0;
+  }
+
+  /* ── ACTIONS ── */
+  .actions { display: flex; flex-direction: column; gap: 10px; }
+
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 13px 20px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    letter-spacing: 0.3px;
+  }
+  .btn-primary:hover { background: #b04420; }
+  .btn-primary:active { transform: scale(0.98); }
+
+  .btn-secondary {
+    background: var(--ink);
+    color: white;
+    border: none;
+    padding: 13px 20px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-secondary:hover { background: #333; }
+
+  /* ── PREVIEW PANEL ── */
+  .preview-panel {
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .preview-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 20px;
+    align-self: flex-start;
+  }
+
+  /* ── INVOICE DOCUMENT ── */
+  #invoice-doc {
+    background: var(--white);
+    width: 100%;
+    max-width: 720px;
+    min-height: 900px;
+    padding: 56px 60px;
+    box-shadow: 0 4px 40px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #invoice-doc::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 6px;
+    height: 100%;
+    background: var(--accent);
+  }
+
+  /* Invoice Header */
+  .inv-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 48px;
+  }
+
+  .inv-brand .company-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.8rem;
+    color: var(--ink);
+    line-height: 1.1;
+    margin-bottom: 6px;
+  }
+
+  .inv-brand .company-details {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.7;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .inv-meta {
+    text-align: right;
+  }
+
+  .inv-meta .invoice-label {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.2rem;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 12px;
+  }
+
+  .inv-meta table {
+    font-size: 0.78rem;
+    border-collapse: collapse;
+    margin-left: auto;
+  }
+
+  .inv-meta table td {
+    padding: 2px 0 2px 16px;
+  }
+
+  .inv-meta table td:first-child {
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.68rem;
+  }
+
+  .inv-meta table td:last-child {
+    font-weight: 600;
+    text-align: right;
+  }
+
+  /* Bill To */
+  .bill-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-bottom: 40px;
+    padding: 24px;
+    background: var(--paper);
+    border-radius: 8px;
+  }
+
+  .bill-block .bill-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .bill-block .bill-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.05rem;
+    margin-bottom: 4px;
+  }
+
+  .bill-block .bill-details {
+    font-size: 0.8rem;
+    color: #555;
+    line-height: 1.7;
+  }
+
+  /* Line Items */
+  .inv-items { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+
+  .inv-items thead tr {
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .inv-items thead th {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    padding: 0 0 10px;
+    text-align: left;
+    font-weight: 500;
+  }
+
+  .inv-items thead th:last-child,
+  .inv-items thead th:nth-child(3),
+  .inv-items thead th:nth-child(2) { text-align: right; }
+
+  .inv-items tbody tr {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .inv-items tbody tr:last-child { border-bottom: none; }
+
+  .inv-items tbody td {
+    padding: 12px 0;
+    font-size: 0.88rem;
+    vertical-align: top;
+  }
+
+  .inv-items tbody td:nth-child(2),
+  .inv-items tbody td:nth-child(3),
+  .inv-items tbody td:last-child { text-align: right; }
+
+  .inv-items .item-description { color: var(--ink); font-weight: 500; }
+  .inv-items .item-note { color: var(--muted); font-size: 0.76rem; margin-top: 2px; }
+
+  /* Totals */
+  .inv-totals {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 24px;
+  }
+
+  .totals-box {
+    width: 260px;
+  }
+
+  .totals-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 7px 0;
+    font-size: 0.85rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .totals-row:last-child { border-bottom: none; }
+
+  .totals-row .t-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+  }
+
+  .totals-row.grand {
+    border-top: 2px solid var(--ink);
+    border-bottom: none;
+    margin-top: 4px;
+    padding-top: 12px;
+  }
+
+  .totals-row.grand .t-label {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1rem;
+    color: var(--ink);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .totals-row.grand .t-amount {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.3rem;
+    color: var(--accent);
+  }
+
+  /* Notes */
+  .inv-notes {
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+
+  .inv-notes .note-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .inv-notes .note-content {
+    font-size: 0.8rem;
+    color: #555;
+    line-height: 1.65;
+  }
+
+  /* VAT badge */
+  .vat-badge {
+    display: inline-block;
+    background: var(--accent2);
+    color: white;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 1px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+
+  /* Status badge */
+  .status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-left: 10px;
+    vertical-align: middle;
+  }
+  .status-unpaid { background: #fff0ec; color: var(--accent); border: 1px solid #f4c4b5; }
+  .status-paid { background: #ecf5f0; color: var(--accent2); border: 1px solid #b5ddc9; }
+
+  /* Print styles */
+  @media print {
+    body { background: white; }
+    .app-header, .editor, .preview-label, .actions { display: none !important; }
+    .app-body { display: block; }
+    .preview-panel { padding: 0; }
+    #invoice-doc {
+      box-shadow: none;
+      max-width: 100%;
+      border-radius: 0;
+    }
+  }
+
+  /* Fade-in animation */
+  #invoice-doc { animation: fadeUp 0.4s ease both; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .toggle-vat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    color: var(--ink);
+    margin-bottom: 14px;
+  }
+
+  .toggle-vat input[type="checkbox"] {
+    width: auto;
+    cursor: pointer;
+    accent-color: var(--accent);
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="logo">Invoice<span>NAM</span></div>
+  <div class="tagline">Namibian Invoice Generator</div>
+</header>
+
+<div class="app-body">
+
+  <!-- ── EDITOR ── -->
+  <aside class="editor">
+
+    <div class="section">
+      <h2>Your Business</h2>
+      <div class="field">
+        <label>Company / Your Name</label>
+        <input type="text" id="from-name" placeholder="e.g. Acme Web Solutions" value="">
+      </div>
+      <div class="field">
+        <label>Address</label>
+        <textarea id="from-address" rows="2" placeholder="Windhoek, Namibia"></textarea>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="from-email" placeholder="you@email.com">
+        </div>
+        <div class="field">
+          <label>Phone</label>
+          <input type="text" id="from-phone" placeholder="+264 ...">
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="section">
+      <h2>Bill To</h2>
+      <div class="field">
+        <label>Client Name</label>
+        <input type="text" id="to-name" placeholder="Client or Company">
+      </div>
+      <div class="field">
+        <label>Client Address</label>
+        <textarea id="to-address" rows="2" placeholder="Client address"></textarea>
+      </div>
+      <div class="field">
+        <label>Client Email</label>
+        <input type="email" id="to-email" placeholder="client@email.com">
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="section">
+      <h2>Invoice Details</h2>
+      <div class="row2">
+        <div class="field">
+          <label>Invoice No.</label>
+          <input type="text" id="inv-number" placeholder="INV-001" value="INV-001">
+        </div>
+        <div class="field">
+          <label>Status</label>
+          <select id="inv-status">
+            <option value="unpaid">Unpaid</option>
+            <option value="paid">Paid</option>
+          </select>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Issue Date</label>
+          <input type="date" id="inv-date">
+        </div>
+        <div class="field">
+          <label>Due Date</label>
+          <input type="date" id="inv-due">
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="section">
+      <h2>Line Items</h2>
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th class="item-desc">Description</th>
+            <th class="item-qty">Qty</th>
+            <th class="item-rate">Rate (N$)</th>
+            <th class="item-del"></th>
+          </tr>
+        </thead>
+        <tbody id="items-body"></tbody>
+      </table>
+      <button class="btn-add" onclick="addItem()">+ Add Line Item</button>
+
+      <label class="toggle-vat">
+        <input type="checkbox" id="vat-toggle"> Include VAT (15%)
+      </label>
+
+      <div class="field">
+        <label>Discount (%)</label>
+        <input type="number" id="discount" placeholder="0" min="0" max="100" value="0">
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="section">
+      <h2>Notes & Payment</h2>
+      <div class="field">
+        <label>Payment Details</label>
+        <textarea id="payment-details" rows="3" placeholder="Bank: FNB Namibia&#10;Account: 12345678&#10;Branch: 280172"></textarea>
+      </div>
+      <div class="field">
+        <label>Notes</label>
+        <textarea id="notes" rows="2" placeholder="Thank you for your business!"></textarea>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="actions">
+      <button class="btn-primary" onclick="window.print()">🖨️ Print / Save as PDF</button>
+      <button class="btn-secondary" onclick="resetForm()">↺ Reset Invoice</button>
+    </div>
+
+  </aside>
+
+  <!-- ── PREVIEW ── -->
+  <main class="preview-panel">
+    <div class="preview-label">Live Preview</div>
+    <div id="invoice-doc">
+
+      <div class="inv-header">
+        <div class="inv-brand">
+          <div class="company-name" id="p-from-name">Your Business Name</div>
+          <div class="company-details" id="p-from-details">your@email.com<br>+264 00 000 0000<br>Windhoek, Namibia</div>
+        </div>
+        <div class="inv-meta">
+          <div class="invoice-label">INVOICE</div>
+          <table>
+            <tr>
+              <td>Number</td>
+              <td id="p-inv-number">INV-001 <span class="status-badge status-unpaid" id="p-status">UNPAID</span></td>
+            </tr>
+            <tr>
+              <td>Issued</td>
+              <td id="p-inv-date">—</td>
+            </tr>
+            <tr>
+              <td>Due</td>
+              <td id="p-inv-due">—</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="bill-section">
+        <div class="bill-block">
+          <div class="bill-label">From</div>
+          <div class="bill-name" id="p-from-name2">Your Business Name</div>
+          <div class="bill-details" id="p-from-address">Windhoek, Namibia</div>
+        </div>
+        <div class="bill-block">
+          <div class="bill-label">Bill To</div>
+          <div class="bill-name" id="p-to-name">Client Name</div>
+          <div class="bill-details" id="p-to-details">—</div>
+        </div>
+      </div>
+
+      <table class="inv-items">
+        <thead>
+          <tr>
+            <th style="width:45%">Description</th>
+            <th style="width:15%">Qty</th>
+            <th style="width:20%">Unit Price</th>
+            <th style="width:20%">Amount</th>
+          </tr>
+        </thead>
+        <tbody id="p-items-body"></tbody>
+      </table>
+
+      <div class="inv-totals">
+        <div class="totals-box" id="totals-box"></div>
+      </div>
+
+      <div class="inv-notes">
+        <div>
+          <div class="note-label">Payment Details</div>
+          <div class="note-content" id="p-payment">—</div>
+        </div>
+        <div>
+          <div class="note-label">Notes</div>
+          <div class="note-content" id="p-notes">Thank you for your business!</div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+</div>
+
+<script>
+  // ── STATE ──
+  let items = [
+    { desc: '', qty: 1, rate: 0 }
+  ];
+
+  // Set today's date
+  const today = new Date();
+  const due = new Date(today);
+  due.setDate(due.getDate() + 14);
+  document.getElementById('inv-date').value = today.toISOString().split('T')[0];
+  document.getElementById('inv-due').value = due.toISOString().split('T')[0];
+
+  // ── RENDER EDITOR ITEMS ──
+  function renderEditorItems() {
+    const tbody = document.getElementById('items-body');
+    tbody.innerHTML = '';
+    items.forEach((item, i) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="item-desc"><input type="text" placeholder="Service description" value="${item.desc}" oninput="updateItem(${i},'desc',this.value)"></td>
+        <td class="item-qty"><input type="number" min="1" value="${item.qty}" oninput="updateItem(${i},'qty',this.value)"></td>
+        <td class="item-rate"><input type="number" min="0" step="0.01" value="${item.rate || ''}" placeholder="0.00" oninput="updateItem(${i},'rate',this.value)"></td>
+        <td class="item-del"><button class="btn-del" onclick="removeItem(${i})">✕</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+    updatePreview();
+  }
+
+  function addItem() {
+    items.push({ desc: '', qty: 1, rate: 0 });
+    renderEditorItems();
+  }
+
+  function removeItem(i) {
+    if (items.length === 1) return;
+    items.splice(i, 1);
+    renderEditorItems();
+  }
+
+  function updateItem(i, field, val) {
+    if (field === 'qty' || field === 'rate') val = parseFloat(val) || 0;
+    items[i][field] = val;
+    updatePreview();
+  }
+
+  // ── FORMAT CURRENCY ──
+  function fmt(n) {
+    return 'N$ ' + parseFloat(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+
+  function fmtDate(str) {
+    if (!str) return '—';
+    const d = new Date(str + 'T00:00:00');
+    return d.toLocaleDateString('en-NA', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  // ── UPDATE PREVIEW ──
+  function updatePreview() {
+    const fromName = document.getElementById('from-name').value || 'Your Business Name';
+    const fromAddress = document.getElementById('from-address').value || '';
+    const fromEmail = document.getElementById('from-email').value || '';
+    const fromPhone = document.getElementById('from-phone').value || '';
+    const toName = document.getElementById('to-name').value || 'Client Name';
+    const toAddress = document.getElementById('to-address').value || '';
+    const toEmail = document.getElementById('to-email').value || '';
+    const invNum = document.getElementById('inv-number').value || 'INV-001';
+    const invDate = document.getElementById('inv-date').value;
+    const invDue = document.getElementById('inv-due').value;
+    const status = document.getElementById('inv-status').value;
+    const vatOn = document.getElementById('vat-toggle').checked;
+    const discount = parseFloat(document.getElementById('discount').value) || 0;
+    const payment = document.getElementById('payment-details').value || '—';
+    const notes = document.getElementById('notes').value || 'Thank you for your business!';
+
+    // From
+    document.getElementById('p-from-name').textContent = fromName;
+    document.getElementById('p-from-name2').textContent = fromName;
+    let fromParts = [];
+    if (fromEmail) fromParts.push(fromEmail);
+    if (fromPhone) fromParts.push(fromPhone);
+    if (fromAddress) fromParts.push(fromAddress);
+    document.getElementById('p-from-details').innerHTML = fromParts.join('<br>') || '—';
+    document.getElementById('p-from-address').innerHTML = fromAddress.replace(/\n/g,'<br>') || '—';
+
+    // To
+    document.getElementById('p-to-name').textContent = toName;
+    let toParts = [];
+    if (toAddress) toParts.push(toAddress.replace(/\n/g,'<br>'));
+    if (toEmail) toParts.push(toEmail);
+    document.getElementById('p-to-details').innerHTML = toParts.join('<br>') || '—';
+
+    // Meta
+    document.getElementById('p-inv-number').innerHTML = invNum + ` <span class="status-badge ${status === 'paid' ? 'status-paid' : 'status-unpaid'}">${status.toUpperCase()}</span>`;
+    document.getElementById('p-inv-date').textContent = fmtDate(invDate);
+    document.getElementById('p-inv-due').textContent = fmtDate(invDue);
+
+    // Items
+    const tbody = document.getElementById('p-items-body');
+    tbody.innerHTML = '';
+    let subtotal = 0;
+    items.forEach(item => {
+      const amount = (parseFloat(item.qty) || 0) * (parseFloat(item.rate) || 0);
+      subtotal += amount;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="item-description">${item.desc || '<span style="color:#bbb">—</span>'}</td>
+        <td>${item.qty}</td>
+        <td>${fmt(item.rate)}</td>
+        <td>${fmt(amount)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // Totals
+    const discountAmt = subtotal * (discount / 100);
+    const afterDiscount = subtotal - discountAmt;
+    const vatAmt = vatOn ? afterDiscount * 0.15 : 0;
+    const total = afterDiscount + vatAmt;
+
+    let totalsHTML = `
+      <div class="totals-row">
+        <span class="t-label">Subtotal</span>
+        <span>${fmt(subtotal)}</span>
+      </div>
+    `;
+    if (discount > 0) {
+      totalsHTML += `
+        <div class="totals-row">
+          <span class="t-label">Discount (${discount}%)</span>
+          <span>− ${fmt(discountAmt)}</span>
+        </div>
+      `;
+    }
+    if (vatOn) {
+      totalsHTML += `
+        <div class="totals-row">
+          <span class="t-label">VAT (15%) <span class="vat-badge">NAM</span></span>
+          <span>${fmt(vatAmt)}</span>
+        </div>
+      `;
+    }
+    totalsHTML += `
+      <div class="totals-row grand">
+        <span class="t-label">Total Due</span>
+        <span class="t-amount">${fmt(total)}</span>
+      </div>
+    `;
+    document.getElementById('totals-box').innerHTML = totalsHTML;
+
+    // Notes
+    document.getElementById('p-payment').innerHTML = payment.replace(/\n/g,'<br>');
+    document.getElementById('p-notes').innerHTML = notes.replace(/\n/g,'<br>');
+  }
+
+  // ── RESET ──
+  function resetForm() {
+    if (!confirm('Reset all fields?')) return;
+    ['from-name','from-address','from-email','from-phone','to-name','to-address','to-email','payment-details','notes'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('inv-number').value = 'INV-001';
+    document.getElementById('inv-status').value = 'unpaid';
+    document.getElementById('inv-date').value = today.toISOString().split('T')[0];
+    document.getElementById('inv-due').value = due.toISOString().split('T')[0];
+    document.getElementById('vat-toggle').checked = false;
+    document.getElementById('discount').value = '0';
+    items = [{ desc: '', qty: 1, rate: 0 }];
+    renderEditorItems();
+  }
+
+  // ── LIVE BINDINGS ──
+  ['from-name','from-address','from-email','from-phone','to-name','to-address','to-email',
+   'inv-number','inv-date','inv-due','inv-status','vat-toggle','discount','payment-details','notes']
+    .forEach(id => {
+      const el = document.getElementById(id);
+      el.addEventListener('input', updatePreview);
+      el.addEventListener('change', updatePreview);
+    });
+
+  // ── INIT ──
+  renderEditorItems();
+</script>
+</body>
+</html>
